@@ -34,6 +34,9 @@ module RailsERD
       # model (for concrete entities) or given name (for abstract entities).
       attr_reader :name
 
+      # If this entity was specified in an "only" option.
+      attr_accessor :is_focus
+
       def initialize(domain, name, model = nil) # @private :nodoc:
         @domain, @name, @model = domain, name, model
       end
@@ -79,6 +82,12 @@ module RailsERD
         !!model and !model.descends_from_active_record?
       end
 
+      # Answers true if this entity was specified in an "only" option.
+      # Used to visually separate the "roots" of a diagram.
+      def is_focus?
+        @is_focus ||= false
+      end
+
       # Returns +true+ if this entity does not correspond directly with a
       # database table (if and only if the entity is specialized or
       # generalized).
@@ -93,7 +102,7 @@ module RailsERD
       end
 
       def namespace
-        $1 if name.match /(.*)::.*/
+        name.scan(/(.*)::.*/).dig(0,0)
       end
 
       def to_s # @private :nodoc:

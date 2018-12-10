@@ -63,7 +63,7 @@ module RailsERD
         labelloc:    :t,
         fontsize:    13,
         fontname:    FONTS[:bold],
-        splines:     'spline'
+        splines:     'ortho'
       }
 
       # Default node attributes.
@@ -86,15 +86,13 @@ module RailsERD
         labeldistance: 1.8,
       }
 
-      # Default cluster attributes.
-      CLUSTER_ATTRIBUTES = {
-        margin: "10,10"
-      }
-
       module Simple
         def entity_style(entity, attributes)
           {}.tap do |options|
             options[:fontcolor] = options[:color] = :grey60 if entity.virtual?
+            options[:penwidth] = 3.0 if entity.is_focus?
+            options[:href] = 'http://www.google.com'
+            options[:tooltip] = entity.attributes.map { |a| "#{a.name}: #{a.type.to_s}"}.join("\n")
           end
         end
 
@@ -105,6 +103,9 @@ module RailsERD
             # Closed arrows for to/from many.
             options[:arrowhead] = relationship.to_many? ? "normal" : "none"
             options[:arrowtail] = relationship.many_to? ? "normal" : "none"
+            options[:tooltip] = relationship.associations.map { |a|
+              "#{a.foreign_key}: #{a.foreign_type}"
+            }.join("\n")
           end
         end
 
@@ -194,9 +195,6 @@ module RailsERD
         # Title of the graph itself.
         graph[:label] = "#{title}\\n\\n" if title
 
-        # Style of splines
-        graph[:splines] = options.splines unless options.splines.nil?
-
         # Setup notation options.
         extend self.class.const_get(options.notation.to_s.capitalize.to_sym)
       end
@@ -221,10 +219,8 @@ module RailsERD
       each_entity do |entity, attributes|
         if options[:cluster] && entity.namespace
           cluster_name = "cluster_#{entity.namespace}"
-          cluster_options = CLUSTER_ATTRIBUTES.merge(label: entity.namespace)
           cluster = graph.get_graph(cluster_name) ||
-                    graph.add_graph(cluster_name, cluster_options)
-
+                    graph.add_graph(cluster_name, label: entity.namespace)
           draw_cluster_node cluster, entity.name, entity_options(entity, attributes)
         else
           draw_node entity.name, entity_options(entity, attributes)
